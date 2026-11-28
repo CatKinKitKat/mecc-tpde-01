@@ -1,1 +1,5 @@
 .DS_Store
+recon/
+harvester_*.json
+harvester_*.xml
+harvester_*.html

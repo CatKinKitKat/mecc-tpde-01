@@ -2,203 +2,233 @@
 
 ## Ficha de Reconhecimento Passivo - Camara Municipal de Sines
 
-> TLDR: worksheet de recon passiva, Grupo 12, sem scan ativo.
+> TLDR: recon passivo executado, sem scan ativo.
 
 Alvo: Camara Municipal de Sines (Moodle, 16 Nov 2026).
-Permitido: passivo + dirbuster leve (wordlist curta, poucos threads, sem autenticacao, sem exploits).
-Proibido: Nmap, Nessus, Nikto, ataques reais e bruteforce massivo.
-Usar WHOIS/RDAP, DNS publico, Shodan, Censys, CT, motores de busca, arquivos.
+Dominio confirmado: `sines.pt`. O palpite inicial `cm-sines.pt` estava errado e foi descartado.
+Executado: whois, dig, subfinder, theHarvester, curl, dorks Google/DDG, leitura de PDFs publicos.
+Nao executado: dirbuster/gobuster, Nmap, Nessus, Nikto, bruteforce, ataques.
 Merge com o Gelson: comparar outputs e consolidar no relatorio LaTeX.
 
 ### 1. Identificacao da Organizacao e Presenca Fisica
 
 #### a) Sede e filiais: localizacao exata e mapeamento de instalacoes
 
-- `whois cm-sines.pt`
-- `curl -s https://rdap.org/domain/cm-sines.pt`
-- `dig +short cm-sines.pt A AAAA MX NS TXT`
-- Dorks Google/DDG:
-  - `site:cm-sines.pt "morada" OR "contactos"`
-  - `"Camara Municipal de Sines" "morada"`
-  - `site:google.com/maps "Camara Municipal de Sines"`
+> `whois sines.pt`
+> `dig +short sines.pt A`
+> `curl -s https://www.gov.pt/entidades/camara-municipal-de-sines`
 
-**Info encontrada:**
-- [ ] preencher com morada, coordenadas e filiais
+Queries:
+- `Camara Municipal de Sines site oficial dominio`
+- `"Camara Municipal de Sines" morada contactos`
+- `site:gov.pt "Camara Municipal de Sines"`
 
-#### b) Seguranca fisica: perimetros, camaras e controlos de acesso via satelite/imagens publicas
+Info encontrada:
+- Sede: Largo Ramos da Costa, 7520-159 Sines; coords 37.954653,-8.864333; tel 269 630 600; info@mun-sines.pt [3].
+- Portal oficial: www.sines.pt [1].
+- Balcao: Espaco Cidadao de Porto Covo, Rua do Mar n.4, 7520-437 Porto Covo [3].
+- WHOIS: `Domain: sines.pt`, admin Municipio de Sines, Largo Ramos Costa, 7520-159 Sines, PT; criado 1988-06-30, alterado 2023-08-02, `ACTIVE`.
+- NIPC 502 563 010 e morada Largo Ramos da Costa 21 A constam em PDF publico [7].
 
-- `curl -s "https://nominatim.openstreetmap.org/search?q=Camara%20Municipal%20de%20Sines&format=json"`
-- Dorks Google/DDG:
-  - `site:google.com/maps "Camara Municipal de Sines"`
-  - `"Camara Municipal de Sines" "camaras" OR "seguranca" OR "acesso"`
-  - `site:cm-sines.pt "instalacoes" OR "edificio"`
+#### b) Seguranca fisica: perimetros, camaras e controlos de acesso
 
-**Info encontrada:**
-- [ ] preencher com observacoes visuais e fontes
+> Sem comando local; observacao visual a fazer manualmente no Google Maps.
+
+Queries:
+- `"Camara Municipal de Sines" camaras seguranca acesso`
+- `site:sines.pt "camaras" OR "vigilancia" OR "seguranca"`
+
+Info encontrada:
+- Sem observacao visual verificada de camaras ou perimetros; usar as coordenadas acima.
+- Achado publico: concurso para "Servico de vigilancia, assistencia balnear, patrulhamento e coordenacao de nadadores salvadores - Epoca Balnear 2024" [16].
+- Area de "Contratacao" do municipio publica avisos e concursos [15].
 
 ### 2. Pegada Logica e de Infraestrutura (Footprinting)
 
 #### a) Propriedades de dominio: WHOIS, subdominios e historico DNS
 
-- `whois cm-sines.pt`
-- `dig cm-sines.pt ANY +noall +answer`
-- `subfinder -d cm-sines.pt -o recon/subfinder.txt`
-- `amass enum -passive -d cm-sines.pt -o recon/amass.txt`
-- `assetfinder --subs-only cm-sines.pt | sort -u > recon/assetfinder.txt`
-- `curl -s "https://crt.sh/?q=%.cm-sines.pt&output=json" -o recon/crtsh.json`
-- Dorks Google/DDG:
-  - `site:lookup.icann.org "cm-sines.pt"`
-  - `site:crt.sh "cm-sines.pt"`
-  - `"cm-sines.pt" -site:cm-sines.pt`
+> `whois sines.pt`
+> `dig sines.pt ANY +noall +answer`
+> `subfinder -d sines.pt -silent -o recon/subfinder.txt`
+> `curl -s "https://crt.sh/?q=%.sines.pt&output=json"` -> 502, sem dados
 
-**Info encontrada:**
-- [ ] preencher com registo, subdominios e historico
+Queries:
+- `site:crt.sh "sines.pt"`
+- `"sines.pt" -site:sines.pt`
+
+Info encontrada:
+- WHOIS: registo `ACTIVE`, criado 1988-06-30, alterado 2023-08-02; admin Municipio de Sines, Largo Ramos Costa, 7520-159 Sines, PT.
+- Nameserver no WHOIS: A.DNS.PT, B.DNS.PT, C.DNS.PT, D.DNS.PT, E.DNS.PT, G.DNS.PT, H.DNS.PT, NS.DNS.BR, NS2.NIC.FR.
+- NS autoritativos observados por `dig`: dns4.cloudns.net, dns3.cloudns.net, dns8.cloudns.net, dns7.cloudns.net (divergencia face ao WHOIS).
+- TXT: `_globalsign-domain-verification=...` (token publico de verificacao).
+- `subfinder`: 17 subdominios, entre eles www, servicosonline, biblioteca, arquivo, centrodeartes, informa, nautical, tasquinhas, sig.
+- crt.sh devolveu 502; sem dados de transparencia de certificados nesta execucao.
 
 #### b) Enderecamento IP: netblocks, ASN e topologia externa
 
-- `whois <IP>`
-- `curl -s "https://stat.ripe.net/data/prefix-overview/data.json?resource=<IP>"`
-- `curl -s "https://rdap.org/ip/<IP>"`
-- Dorks Google/DDG:
-  - `site:bgp.he.net "Camara Municipal de Sines"`
-  - `site:ripe.net "cm-sines.pt"`
-  - `site:censys.io "cm-sines.pt"`
+> `dig +short sines.pt A`
+> `whois 195.23.140.168`
+> `curl -s "https://stat.ripe.net/data/prefix-overview/data.json?resource=195.23.140.168"` -> `data: null`
 
-**Info encontrada:**
-- [ ] preencher com IPs, CIDRs, ASN e provedores
+Queries:
+- `site:bgp.he.net "sines.pt"`
+- `site:ripe.net "sines.pt"`
+
+Info encontrada:
+- A: `195.23.140.168`.
+- WHOIS do IP: `195.23.140.0/24`, netname `NOS`, descr `NOS COMUNICACOES S.A.`, country PT, org `ORG-TPS1-RIPE`, mnt-by `AS2860-MNT`, abuse `abuse@nos.pt`.
+- RIPEstat nao devolveu prefixo/ASN; manter como pendente.
 
 #### c) Servicos externos: cloud, VPN, Citrix, e-mail, favicon e tecnologias
 
-- `dig cm-sines.pt MX TXT`
-- `cloudenum cm-sines.pt` (ou `python3 cloudenum.py -d cm-sines.pt`)
-- `curl -s "https://mxtoolbox.com/SuperTool.aspx?action=mx%3acm-sines.pt"`
-- Shodan:
-  - `hostname:"cm-sines.pt"`
-  - `http.title:"AnyConnect" "Sines"`
-  - `product:"Citrix" "Sines"`
-  - `http.favicon.hash:<hash>` (hash via Shodan, sem GET ao alvo)
-- Dorks Google/DDG:
-  - `site:cm-sines.pt "vpn" OR "citrix" OR "office365" OR "webmail"`
-  - `site:grayhatwarfare.com "sines"`
-  - `site:builtwith.com "cm-sines.pt"`
+> `dig sines.pt MX` -> sem registos MX
+> `theHarvester -d sines.pt -b duckduckgo -l 50` -> 0 IPs, 0 emails, 0 pessoas, 0 hosts
 
-**Info encontrada:**
-- [ ] preencher com servicos, portas publicas e tecnologias
+Queries:
+- `site:sines.pt "servicosonline" OR "balcao" OR "autenticacao"`
+- `"Municipio de Sines" VPN OR Citrix OR Office365`
+- `site:sines.pt "vpn" OR "citrix" OR "office365" OR "webmail"`
+
+Info encontrada:
+- Portal de servicos online em `servicosonline.sines.pt` [18], tambem linkado na pagina "Servicos Online" do site oficial [17].
+- Sem MX publico observado; o TXT Globalsign e o unico sinal de verificacao de dominio visto.
+- Sem resultados de AnyConnect, Citrix, Office365 ou favicon hash nesta execucao.
+- `theHarvester` DuckDuckGo nao encontrou IPs, emails, pessoas ou hosts.
 
 ### 3. Analise de Metadados e Ficheiros Expostos
 
 #### a) Metadados de documentos publicos (PDF, DOCX, XLSX)
 
-- `metagoofil -d cm-sines.pt -t pdf,docx,xlsx -l 20 -o recon/files/`
-- `exiftool recon/files/<ficheiro>`
-- `pdfinfo recon/files/<ficheiro>`
-- `strings recon/files/<ficheiro> | head -50`
-- Dorks Google/DDG:
-  - `site:cm-sines.pt filetype:pdf`
-  - `site:cm-sines.pt filetype:doc OR filetype:docx OR filetype:xlsx`
-  - `site:cm-sines.pt "confidencial" OR "interno"`
+> `curl -sL -o recon/<ficheiro>.pdf <url>`
+> `python3 -c "from pypdf import PdfReader; r=PdfReader('<ficheiro>'); print(r.pages.__getitem__(0).extract_text())"`
+> `exiftool` disponivel, nao corrido sobre o conjunto todo
 
-**Info encontrada:**
-- [ ] preencher com nomes, software, impressoras e caminhos de rede
+Queries:
+- `site:sines.pt filetype:pdf`
+- `site:sines.pt "@mun-sines.pt" OR "@sines.pt"`
+
+Info encontrada:
+- PDF de conselheiro: Helder Alexandre Gil Guerreiro, conselheiro, mandato 2017/2021, CDU; contacto `geral@mun-sines.pt`, +351 269 630 600, fax 269 633 022, NIPC 502 563 010 [7].
+- PDF "Grandes Opcoes do Plano e Orcamento 2025-2029", 220 paginas [12].
+- PDF "Relatorio Anual de Avaliacao ... 2010", 25 paginas, riscos de corrupcao [10].
+- Dork `filetype:pdf` tambem devolveu boletins "Sines em Agenda", "SINEENSE" e "Sines Municipal".
 
 #### b) Fugas de credenciais ou dados em repositorios de terceiros
 
-- `theHarvester -d cm-sines.pt -b all -f recon/harvester.html`
-- `gitleaks detect --source <repo-publico> --report-path recon/gitleaks.json`
-- Dorks Google/DDG:
-  - `site:github.com "cm-sines.pt"`
-  - `site:pastebin.com "cm-sines.pt"`
-  - `"@cm-sines.pt" "password" OR "senha"`
+> Sem API key HIBP; nao consultado por dominio.
 
-**Info encontrada:**
-- [ ] preencher com credenciais/dados expostos e fonte
+Queries:
+- `site:github.com "sines.pt"`
+- `site:pastebin.com "mun-sines.pt"`
+- `"@mun-sines.pt" "password" OR "senha"`
+
+Info encontrada:
+- Sem resultados relevantes nos dorks acima.
+- Pastebin devolveu apenas paginas genericas, sem paste especifico do municipio.
 
 #### c) Historico web: paginas e ficheiros removidos
 
-- `curl -s "http://web.archive.org/cdx/search/cdx?url=cm-sines.pt/*&output=json&filter=statuscode:200&fl=timestamp,original&collapse=digest" -o recon/wayback.json`
-- `curl -s "https://web.archive.org/web/20200101000000/http://www.cm-sines.pt/"`
-- Dorks Google/DDG:
-  - `site:web.archive.org/web "cm-sines.pt"`
-  - `"cm-sines.pt" "filetype:pdf" "arquivo"`
+> `curl -s "http://web.archive.org/cdx/search/cdx?url=sines.pt/*&output=json&filter=statuscode:200&fl=timestamp,original&collapse=digest&limit=20"` -> 504
 
-**Info encontrada:**
-- [ ] preencher com URLs antigas e ficheiros sensiveis
+Queries:
+- `site:web.archive.org "sines.pt"`
+
+Info encontrada:
+- CDX/Wayback nao respondeu nesta execucao (504); pendente para corrida manual.
 
 #### d) Enumeracao muito leve de diretorios (opcional)
 
-- Limites: wordlist curta, 1-2 threads, sem recursao, sem login, sem payloads, sem exploits
-- `gobuster dir -u https://www.cm-sines.pt -w /usr/share/wordlists/dirb/common.txt -t 2 -q -o recon/gobuster.txt`
-- `dirb https://www.cm-sines.pt/ /usr/share/dirb/wordlists/small.txt -o recon/dirb.txt`
-- Alternativa passiva (sem pedidos ao alvo):
-  - `site:cm-sines.pt inurl:/admin/ OR inurl:/backup/ OR inurl:/uploads/`
-  - `site:cm-sines.pt intitle:"index of"`
+> NAO EXECUTADO nesta fase. Limites se for feito manualmente: wordlist curta, 1-2 threads, sem recursao, sem login, sem payloads, sem exploits.
+> `gobuster dir -u https://www.sines.pt -w /usr/share/wordlists/dirb/common.txt -t 2 -q -o recon/gobuster.txt`
+> `dirb https://www.sines.pt/ /usr/share/dirb/wordlists/small.txt -o recon/dirb.txt`
+> Alternativa passiva: `site:sines.pt inurl:/admin/ OR inurl:/backup/ OR inurl:/uploads/`
 
-**Info encontrada:**
-- [ ] preencher com diretorios/ficheiros e decidir se o pedido foi minimo
+Info encontrada:
+- Nao executado; sem dados.
 
 ### 4. Inteligencia sobre Colaboradores
 
 #### a) Estrutura organizacional, cargos e departamentos
 
-- Dorks Google/DDG:
-  - `site:linkedin.com/company "Camara Municipal de Sines"`
-  - `site:linkedin.com/in "Camara Municipal de Sines"`
-  - `site:facebook.com "Camara Municipal de Sines"`
-  - `"Camara Municipal de Sines" "diretor" OR "chefe de divisao"`
+Queries:
+- `site:linkedin.com/in "Camara Municipal de Sines"`
+- `site:linkedin.com/company "Municipio de Sines"`
 
-**Info encontrada:**
-- [ ] preencher com nomes, cargos e hierarquia
+Info encontrada:
+- Despacho de 2025 revela divisoes: Gabinete de Apoio a Presidencia e Vereacao, Divisao de Administracao e Financas, Divisao Juridica, Divisao de Obras Municipais, Sistemas e Tecnologias de Informacao, Unidade de Atendimento e Gestao Documental [8].
+- Nomes em TI: Elisabete Maria Rego Vera Ruivo, Goncalo Jose Gamito Pereira, Nadia da Conceicao Viegas da Silva, Ricardo Victor da Silva [8].
+- Conselheiro Helder Guerreiro, CDU, sem delegacoes [7].
+- gov.pt descreve areas: saude, educacao, acao social, ambiente, transportes, comunicacoes, abastecimento, desporto, cultura, defesa do consumidor, protecao civil [3].
+- Resultados LinkedIn nao foram confirmados como funcionarios; nao usar sem validacao.
 
 #### b) Formato do e-mail institucional
 
-- `theHarvester -d cm-sines.pt -b google,bing,duckduckgo -l 200 -f recon/emails.html`
-- Dorks Google/DDG:
-  - `"@cm-sines.pt"`
-  - `site:cm-sines.pt "@"`
-  - `"primeiro.apelido@cm-sines.pt"`
+> `theHarvester -d sines.pt -b duckduckgo -l 50` -> 0 emails
 
-**Info encontrada:**
-- [ ] preencher com padrao de e-mail e exemplos
+Queries:
+- `"@mun-sines.pt"`
+- `site:sines.pt "@"`
 
-#### c) Exposicao de e-mails corporativos em fugas
+Info encontrada:
+- Dominio de correio observado: `@mun-sines.pt`, nao `@sines.pt` [3][7].
+- Enderecos publicos: `info@mun-sines.pt` [3], `geral@mun-sines.pt` [7].
+- theHarvester nao encontrou emails adicionais.
 
-- Dorks Google/DDG:
-  - `"@cm-sines.pt" site:haveibeenpwned.com`
-  - `"@cm-sines.pt" "breach" OR "vazamento"`
-  - `site:dehashed.com "cm-sines.pt"`
+#### c) Exposicao de e-mails corporativos em bases de fuga
 
-**Info encontrada:**
-- [ ] preencher com dominios encontrados em bases de fuga
+Queries:
+- `"@mun-sines.pt" site:haveibeenpwned.com`
+- `"@mun-sines.pt" "breach" OR "vazamento"`
+
+Info encontrada:
+- Sem resultado especifico nesta execucao.
 
 ### 5. Informacao de Negocio e Relacionamentos
 
 #### a) Parceiros e fornecedores com acesso a infraestrutura
 
-- Dorks Google/DDG:
-  - `site:cm-sines.pt "parceiro" OR "fornecedor"`
-  - `site:base.gov.pt "Camara Municipal de Sines"`
-  - `site:cm-sines.pt "ajuste direto" OR "contrato"`
+Queries:
+- `site:base.gov.pt "Camara Municipal de Sines" contrato`
+- `site:sines.pt "ajuste direto" OR "contrato"`
 
-**Info encontrada:**
-- [ ] preencher com entidades terceiras e relacao
+Info encontrada:
+- Painel "Contratacao" no site oficial [15].
+- Concurso publico de vigilancia/balnear 2024 [16].
+- Portal Autarquico tem seccoes "Cooperacao Tecnica e Financeira" e "Protocolos / Parcerias" [5].
+- Base.gov: dork encontrou contratos, mas os PDFs tentados devolveram 404; nao usar como evidencia.
 
 #### b) Dados financeiros, aquisicoes e tecnologias criticas
 
-- Dorks Google/DDG:
-  - `site:cm-sines.pt "relatorio anual" OR "orcamento"`
-  - `site:cm-sines.pt "relatorio de gestao" filetype:pdf`
-  - `"Camara Municipal de Sines" "tecnologia" OR "contrato"`
+> `curl -sL -o recon/gop_2025_2029.pdf https://www.sines.pt/cmsines/uploads/document/file/12287/grandes_opcoes_do_plano_e_orcamento_2025_2029.pdf`
 
-**Info encontrada:**
-- [ ] preencher com fontes e valores
+Queries:
+- `site:sines.pt "relatorio anual" OR "orcamento"`
+
+Info encontrada:
+- Pagina "Opcoes do Plano / Orcamento" [6].
+- GOP 2025-2029, 220 paginas [12].
+- Relatorio Anual de Avaliacao 2010, 25 paginas [10].
 
 ### 6. Modelacao de Ameacas
 
-- Ativos criticos: listar dominios, portais, dados e servicos das seccoes 1-5
-- Ameacas e agentes: pesquisar ataques a entidades/sistemas semelhantes
-  - Dorks: `"camara municipal" ransomware`, `"autarquia" ataque cibernetico`, `site:incidentdatabase.io "municipality"`
-- Superficie de ataque: formularios, logins, versoes antigas e ficheiros expostos
-- Vetores de ataque: justificar cada um com evidencia passiva
+- Ativos criticos: `sines.pt`, `servicosonline.sines.pt` [18], portal gov.pt [3].
+- Dados sensiveis em PDF: mapa de pessoal [8] e dados orcamentais [12].
+- Ameacas e agentes: phishing dirigido com nomes de funcionarios [8] e emails `@mun-sines.pt` [3][7].
+- Abuso de informacao de contratacao [15][16].
+- Superficie de ataque: portais web, area de servicos online [18], documentos publicos, formularios de pesquisa.
+- Vetores de ataque: engenharia social passiva ancorada no mapa de pessoal [8]; seguimento de concursos e fornecedores [15][16].
 
-**Info encontrada:**
-- [ ] preencher com ativos, ameacas, superficie e vetores
+## Sources
+
+[1] https://www.sines.pt
+[3] https://www.gov.pt/entidades/camara-municipal-de-sines
+[5] https://portalautarquico.dgal.gov.pt/pt-PT/entidades-locais/concelhos/sines
+[6] https://www.sines.pt/pages/343
+[7] https://www.sines.pt/cmsines/uploads/writer_file/document/2147/councillor_helder_guerreiro.pdf
+[8] https://www.sines.pt/cmsines/uploads/document/file/12471/despacho_20250509___afetacao_e_reafetacao_dos_trabalhadores_do_mapa_de_pessoal_da_camara_municipal_de_sines.pdf
+[10] https://www.sines.pt/uploads/document/file/1471/Relat_rio_Anual_de_Avalia__o_de_2010_e_actualiza__o_do_plano_para_2011.pdf
+[12] https://www.sines.pt/cmsines/uploads/document/file/12287/grandes_opcoes_do_plano_e_orcamento_2025_2029.pdf
+[15] https://www.sines.pt/pages/302
+[16] https://www.sines.pt/pages/862?news_id=3969
+[17] https://www.sines.pt/pages/1512
+[18] https://servicosonline.sines.pt
