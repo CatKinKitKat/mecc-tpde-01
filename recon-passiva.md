@@ -50,7 +50,7 @@ Info encontrada:
 > `whois sines.pt`
 > `dig sines.pt ANY +noall +answer`
 > `subfinder -d sines.pt -silent -o recon/subfinder.txt`
-> `curl -s "https://crt.sh/?q=%.sines.pt&output=json"` -> 502, sem dados
+> `curl -s "https://crt.sh/?q=%.sines.pt&output=json"` -> 200, 16 registos
 
 Queries:
 - `site:crt.sh "sines.pt"`
@@ -62,7 +62,7 @@ Info encontrada:
 - NS autoritativos observados por `dig`: dns4.cloudns.net, dns3.cloudns.net, dns8.cloudns.net, dns7.cloudns.net (divergencia face ao WHOIS).
 - TXT: `_globalsign-domain-verification=...` (token publico de verificacao).
 - `subfinder`: 17 subdominios, entre eles www, servicosonline, biblioteca, arquivo, centrodeartes, informa, nautical, tasquinhas, sig.
-- crt.sh devolveu 502; sem dados de transparencia de certificados nesta execucao.
+- crt.sh: 16 registos, 3 nomes unicos: `*.sines.pt`, `sines.pt`, `informa.sines.pt` [13].
 
 #### b) Enderecamento IP: netblocks, ASN e topologia externa
 
@@ -77,7 +77,7 @@ Queries:
 Info encontrada:
 - A: `195.23.140.168`.
 - WHOIS do IP: `195.23.140.0/24`, netname `NOS`, descr `NOS COMUNICACOES S.A.`, country PT, org `ORG-TPS1-RIPE`, mnt-by `AS2860-MNT`, abuse `abuse@nos.pt`.
-- RIPEstat nao devolveu prefixo/ASN; manter como pendente.
+- RIPEstat network-info: prefixo `195.23.0.0/16`, ASN nao devolvido [15]; WHOIS IP mostra `mnt-by AS2860-MNT` (ASN 2860 por confirmar).
 
 #### c) Servicos externos: cloud, VPN, Citrix, e-mail, favicon e tecnologias
 
@@ -128,13 +128,13 @@ Info encontrada:
 
 #### c) Historico web: paginas e ficheiros removidos
 
-> `curl -s "http://web.archive.org/cdx/search/cdx?url=sines.pt/*&output=json&filter=statuscode:200&fl=timestamp,original&collapse=digest&limit=20"` -> 504
+> `curl -s "http://web.archive.org/cdx/search/cdx?url=sines.pt/*&output=json&filter=statuscode:200&fl=timestamp,original&collapse=digest&limit=20"` -> 200
 
 Queries:
 - `site:web.archive.org "sines.pt"`
 
 Info encontrada:
-- CDX/Wayback nao respondeu nesta execucao (504); pendente para corrida manual.
+- Wayback CDX: 20 snapshots entre 2007-03-28 e 2016-06-25, urls `sines.pt` e `www.sines.pt` [14]; limite de 20 usado, existem mais.
 
 #### d) Enumeracao muito leve de diretorios (opcional)
 
@@ -228,7 +228,10 @@ Info encontrada:
 [8] https://www.sines.pt/cmsines/uploads/document/file/12471/despacho_20250509___afetacao_e_reafetacao_dos_trabalhadores_do_mapa_de_pessoal_da_camara_municipal_de_sines.pdf
 [10] https://www.sines.pt/uploads/document/file/1471/Relat_rio_Anual_de_Avalia__o_de_2010_e_actualiza__o_do_plano_para_2011.pdf
 [12] https://www.sines.pt/cmsines/uploads/document/file/12287/grandes_opcoes_do_plano_e_orcamento_2025_2029.pdf
+[13] https://crt.sh/?q=%.sines.pt&output=json
+[14] http://web.archive.org/cdx/search/cdx?url=sines.pt/*&output=json&filter=statuscode:200&fl=timestamp,original&collapse=digest&limit=20
 [15] https://www.sines.pt/pages/302
+[15] https://stat.ripe.net/data/network-info/data.json?resource=195.23.140.168
 [16] https://www.sines.pt/pages/862?news_id=3969
 [17] https://www.sines.pt/pages/1512
 [18] https://servicosonline.sines.pt
